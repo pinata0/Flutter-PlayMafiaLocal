@@ -10,6 +10,10 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 
 import {
+  getRoomState,
+  type GetRoomStateInput,
+} from "../../domains/room/services/getRoomState";
+import {
   createRoom,
 } from "../../domains/room/services/createRoom";
 import {
@@ -71,6 +75,21 @@ export const leaveRoomCallable = onCall(async (request) => {
   }
 });
 
+export const getRoomStateCallable = onCall(async (request) => {
+  try {
+    const input = parseGetRoomStateInput(request.data);
+    const state = await getRoomState(input);
+
+    return {
+      ok: true,
+      state,
+    };
+  } catch (error: unknown) {
+    logger.error("getRoomStateCallable failed", error);
+    throw toHttpsError(error);
+  }
+});
+
 function parseCreateRoomInput(data: unknown): CreateRoomInput {
   const title = getRequiredString(data, "title");
   const hostUid = getRequiredString(data, "hostUid");
@@ -104,6 +123,16 @@ function parseJoinRoomInput(data: unknown): JoinRoomInput {
 }
 
 function parseLeaveRoomInput(data: unknown): LeaveRoomInput {
+  const roomId = getRequiredString(data, "roomId");
+  const playerUid = getRequiredString(data, "playerUid");
+
+  return {
+    roomId,
+    playerUid,
+  };
+}
+
+function parseGetRoomStateInput(data: unknown): GetRoomStateInput {
   const roomId = getRequiredString(data, "roomId");
   const playerUid = getRequiredString(data, "playerUid");
 

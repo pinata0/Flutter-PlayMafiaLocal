@@ -7,10 +7,12 @@ newsId를 부여합니다
 repository로 저장합니다
 저장된 뉴스를 반환합니다
 */
+
 import {randomUUID} from "node:crypto";
 
 import {getRoomById} from "../../../repositories/roomRepository";
 import {createNews} from "../../../repositories/newsRepository";
+import type {NewsDocument} from "../../../models/news";
 import type {BuiltNightNews} from "./buildNightNews";
 
 export interface PublishNewsInput {
@@ -18,13 +20,9 @@ export interface PublishNewsInput {
   news: BuiltNightNews;
 }
 
-export interface PublishedNews extends BuiltNightNews {
-  newsId: string;
-}
-
 export async function publishNews(
   input: PublishNewsInput,
-): Promise<PublishedNews> {
+): Promise<NewsDocument> {
   const roomId = input.roomId.trim();
   const news = input.news;
 
@@ -46,9 +44,10 @@ export async function publishNews(
     throw new Error("Room not found.");
   }
 
-  const publishedNews: PublishedNews = {
+  const publishedNews: NewsDocument = {
     newsId: randomUUID(),
     ...news,
+    updatedAt: null,
   };
 
   await createNews(publishedNews);
