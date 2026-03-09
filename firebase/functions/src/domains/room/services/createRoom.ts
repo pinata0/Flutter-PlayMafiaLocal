@@ -15,13 +15,14 @@ import {
   type RoomDocument,
 } from "../../../models/room";
 
-import {createPlayer} from "../../../repositories/playerRepository";
-import {
+import {createPlayer, getPlayerByUid} from "../../../repositories/playerRepository";import {
   createInitialPlayerPresenceState,
   createInitialPlayerRoleState,
   createInitialPlayerTaskState,
   type PlayerDocument,
 } from "../../../models/player";
+
+
 
 const ROOM_CODE_LENGTH = 6;
 const ROOM_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -40,6 +41,20 @@ export async function createRoom(input: CreateRoomInput): Promise<RoomDocument> 
 
   if (!hostUid) {
     throw new Error("Host UID is required.");
+  }
+
+  if (!nickname) {
+    throw new Error("Nickname is required.");
+  }
+
+  if (!color) {
+    throw new Error("Color is required.");
+  }
+
+  const existingHostPlayer = await getPlayerByUid(hostUid);
+
+  if (existingHostPlayer) {
+    throw new Error("Host player already exists.");
   }
 
   const minPlayers = input.minPlayers ?? DEFAULT_ROOM_SETTINGS.minPlayers;
@@ -89,8 +104,12 @@ function validatePlayerCountRange(minPlayers: number, maxPlayers: number): void 
     throw new Error("minPlayers and maxPlayers must be integers.");
   }
 
-  if (minPlayers < 1) {
-    throw new Error("minPlayers must be at least 1.");
+  if (minPlayers < 4) {
+    throw new Error("minPlayers must be at least 4.");
+  }
+
+  if (maxPlayers > 8) {
+    throw new Error("maxPlayers must be at most 8.");
   }
 
   if (maxPlayers < minPlayers) {
