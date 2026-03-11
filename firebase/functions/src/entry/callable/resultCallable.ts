@@ -12,6 +12,8 @@ import {
 
 export const checkWinConditionCallable = onCall(async (request) => {
   try {
+    ensureAuthenticated(request.auth);
+
     const input = parseCheckWinConditionInput(request.data);
     const result = await checkWinCondition(input);
 
@@ -20,13 +22,15 @@ export const checkWinConditionCallable = onCall(async (request) => {
       result,
     };
   } catch (error: unknown) {
-    logger.error("checkWinConditionCallable failed", error);
+    logger.error("checkWinConditionCallable failed", {error});
     throw toHttpsError(error);
   }
 });
 
 export const finalizeGameCallable = onCall(async (request) => {
   try {
+    ensureAuthenticated(request.auth);
+
     const input = parseFinalizeGameInput(request.data);
     const room = await finalizeGame(input);
 
@@ -35,7 +39,7 @@ export const finalizeGameCallable = onCall(async (request) => {
       room,
     };
   } catch (error: unknown) {
-    logger.error("finalizeGameCallable failed", error);
+    logger.error("finalizeGameCallable failed", {error});
     throw toHttpsError(error);
   }
 });
@@ -85,11 +89,24 @@ function getRequiredString(data: unknown, key: string): string {
     throw new HttpsError("invalid-argument", `${key} must be a string.`);
   }
 
-  if (!value.trim()) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
     throw new HttpsError("invalid-argument", `${key} is required.`);
   }
 
-  return value;
+  return trimmed;
+}
+
+function ensureAuthenticated(
+  auth: unknown,
+): asserts auth is {uid: string} {
+  if (!auth || typeof auth !== "object" || !("uid" in auth)) {
+    throw new HttpsError(
+      "failed-precondition",
+      "The function must be called while authenticated.",
+    );
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
